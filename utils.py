@@ -25,7 +25,17 @@ class Chanel:
         self.amount_views = self.info['items'][0]["statistics"]["viewCount"]  # кол-во просмотров
 
 
+    def __str__(self):
+        """Возвращает название канала"""
+        return f'Youtube-канал: {self.name}'
+    def __add__(self, other):
+        return self.amount_subscribers + other.amount_subscribers
 
+    def __gt__(self, other):
+        """Сравнивает кол-во подписчиков и возвращает True или False"""
+        if self.amount_subscribers > other.amount_subscribers:
+            return True
+        return False
 
     @property
     def id(self):
@@ -54,6 +64,4 @@ class Chanel:
         """Выводит API объект """
         return cls.youtube
 
-chn1 = Chanel('UC6EBllXkH3haWCoGpdgWMHA')
-print(chn1.id)
-chn1.id = '123'
+
