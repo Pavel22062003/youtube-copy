@@ -64,4 +64,38 @@ class Chanel:
         """Выводит API объект """
         return cls.youtube
 
+class Video:
+
+    def __init__(self,id:str):
+        api_key: str = os.getenv('API_KEY')
+        youtube = build('youtube', 'v3', developerKey=api_key)
+        video_response = youtube.videos().list(part='snippet,statistics',
+                                               id=id
+                                               ).execute()
+
+        self.title: str = video_response['items'][0]['snippet']['title']
+        self.view_count: int = video_response['items'][0]['statistics']['viewCount']
+        self.like_count: int = video_response['items'][0]['statistics']['likeCount']
+        self.comment_count: int = video_response['items'][0]['statistics']['commentCount']
+
+    def __str__(self):
+        """возвращает название видео"""
+        return self.title
+
+class PLVideo(Video):
+    def __init__(self, video_id:str, playlist_id:str):
+        super().__init__(video_id)
+        api_key: str = os.getenv('API_KEY')
+        youtube = build('youtube', 'v3', developerKey=api_key)
+
+        playlist = youtube.playlists().list(id=playlist_id, part='snippet').execute()
+        self.playlist_name = playlist['items'][0]['snippet']['title']
+
+    def __str__(self):
+        """возвращает название видео и название плэйлиста"""
+        return f'{super().__str__()} ({self.playlist_name})'
+
+
+
+
 
