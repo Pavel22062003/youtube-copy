@@ -1,6 +1,6 @@
 import os
 import json
-
+import isodate
 from googleapiclient.discovery import build
 
 
@@ -69,14 +69,15 @@ class Video:
     def __init__(self,id:str):
         api_key: str = os.getenv('API_KEY')
         youtube = build('youtube', 'v3', developerKey=api_key)
+        self.id = id
         video_response = youtube.videos().list(part='snippet,statistics',
-                                               id=id
+                                               id=self.id
                                                ).execute()
 
         self.title: str = video_response['items'][0]['snippet']['title']
-        self.view_count: int = video_response['items'][0]['statistics']['viewCount']
-        self.like_count: int = video_response['items'][0]['statistics']['likeCount']
-        self.comment_count: int = video_response['items'][0]['statistics']['commentCount']
+        self.view_count: int = int(video_response['items'][0]['statistics']['viewCount'])
+        self.like_count: int = int(video_response['items'][0]['statistics']['likeCount'])
+        self.comment_count: int = int(video_response['items'][0]['statistics']['commentCount'])
 
     def __str__(self):
         """возвращает название видео"""
@@ -87,6 +88,7 @@ class PLVideo(Video):
         super().__init__(video_id)
         api_key: str = os.getenv('API_KEY')
         youtube = build('youtube', 'v3', developerKey=api_key)
+        self.playlist_id = playlist_id
 
         playlist = youtube.playlists().list(id=playlist_id, part='snippet').execute()
         self.playlist_name = playlist['items'][0]['snippet']['title']
@@ -95,7 +97,59 @@ class PLVideo(Video):
         """возвращает название видео и название плэйлиста"""
         return f'{super().__str__()} ({self.playlist_name})'
 
+class PlayList(Video):
+    api_key: str = os.getenv('API_KEY')
+    youtube = build('youtube', 'v3', developerKey=api_key)
+    def __init__(self, playlist_id):
 
+        playlist_id = 'PLguYHBi01DWr4bRWc4uaguASmo7lW4GCb'  # Редакция. АнтиТревел
+        playlist_videos = self.youtube.playlistItems().list(playlistId=playlist_id,
+                                                       part='contentDetails',
+                                                       maxResults=50,
+                                                       ).execute()
+        self.__playlist_id = playlist_id
+
+        playlist = self.youtube.playlists().list(id=playlist_id, part='snippet').execute()
+        self.playlist_name = playlist['items'][0]['snippet']['title']
+        self.url = f'https://www.youtube.com/playlist?list={self.__playlist_id}'
+        self.__video_ids: list[str] = [video['contentDetails']['videoId'] for video in playlist_videos['items']]
+    @property
+    def total_duratuion(self):
+        """Показывают общую продолжительность плэй листа"""
+        video_response = self.youtube.videos().list(part='contentDetails,statistics',
+                                               id=','.join(self.__video_ids)
+                                               ).execute()
+        # printj(video_response)
+        duration_amount = 0
+        for video in video_response['items']:
+
+            iso_8601_duration = video['contentDetails']['duration']
+            duration = isodate.parse_duration(iso_8601_duration)
+            if duration_amount == 0:
+                duration_amount = duration
+            else:
+                 duration_amount += duration
+        return duration_amount
+
+    def show_best_video(self):
+       """Выводит самое популярное видео из плэй листа на основе лайков"""
+       counter = 0
+       id = ''
+       for i in self.__video_ids:
+         super().__init__(i)
+         if self.like_count > counter:
+             counter = self.like_count
+             id = self.id
+       return f'https://youtu.be/{id}'
+
+
+
+c = PlayList('PLguYHBi01DWr4bRWc4uaguASmo7lW4GCb')
+print(c.total_duratuion)
+print(type(c.total_duratuion))
+
+
+        
 
 
 
